@@ -132,26 +132,16 @@ var Chat = React.createClass({displayName: "Chat",
             currentChannel: null
         }
     },
+
+    // before component
+    componentWillMount: function () {
+        this.pusher = new Pusher(PUSHER_CHAT_APP_KEY);
+        this.chatRooms = {};
+    },
     // right after the component is  rendered for the first time
     // set messages, channels dynamically after the component is initially rendered
     componentDidMount: function () {
         this.createChannel(DEFAULT_CHANNEL);
-        var messages = {};
-        messages[DEFAULT_CHANNEL] = [
-            {
-                name:'adr_em',
-                time: new Date(),
-                text: 'Hello there!'
-            },
-            {
-                name:'_adrianespinosa',
-                time: new Date(),
-                text: 'Welcome!'
-            }
-        ]
-        this.setState({
-            messages: messages
-        })
     },
 
     componentDidUpdate: function () {
@@ -169,13 +159,13 @@ var Chat = React.createClass({displayName: "Chat",
             var message = {
                 name: this.state.name,
                 text: text,
-                time: new Date()
+                channel: this.state.currentChannel
             }
 
-            var messages = this.state.messages;
-            messages[this.state.currentChannel].push(message);
-            this.setState({ messages: messages });
-            $('#msg-input').val('');
+            $.post('/messages/', message).success(function () {
+                $('#msg-input').val('');
+            });
+
         }
     },
     
