@@ -181,6 +181,16 @@ var Chat = React.createClass({displayName: "Chat",
                 messages: messages
             });
             this.joinChannel(channelName);
+            // subscribe to the channel to receive messages
+            this.chatRooms[channelName] = this.pusher.subscribe(channelName);
+            
+            // store messages into messages array binding an event
+            this.chatRooms[channelName].bind('new_message', function (message) {
+                var messages = this.state.messages;
+                messages[channelName].push(message);
+                this.setState({ messages: messages });
+            }, this);
+
         }
     },
 
@@ -283,6 +293,7 @@ var Messages = React.createClass({displayName: "Messages",
                 React.createElement("div", {key: i, className: "message"}, 
                     React.createElement("a", {href: "http://twitter.com/" + message.name + "/", target: "_blank", className: "message_username"}, React.createElement("img", {src: "http://twitter.com/" + message.name + "/profile_image", className: "message_profile_pic"})), 
                     React.createElement("a", {href: "http://twitter.com/" + message.name + "/", target: "_blank", className: "message_username"}, message.name), 
+                    React.createElement("span", {className: "message_timestamp}"}, new Date(message.time).toLocaleTimeString()), 
                     React.createElement("span", {className: "message_content", dangerouslySetInnerHTML: { __html: text}})
                 ))
         });

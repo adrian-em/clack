@@ -78,6 +78,16 @@ var Chat = React.createClass({
                 messages: messages
             });
             this.joinChannel(channelName);
+            // subscribe to the channel to receive messages
+            this.chatRooms[channelName] = this.pusher.subscribe(channelName);
+            
+            // store messages into messages array binding an event
+            this.chatRooms[channelName].bind('new_message', function (message) {
+                var messages = this.state.messages;
+                messages[channelName].push(message);
+                this.setState({ messages: messages });
+            }, this);
+
         }
     },
 
