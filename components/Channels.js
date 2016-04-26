@@ -48,11 +48,17 @@ var Channels = React.createClass({
         this.joinNewChannel();
     },
 
+    switchChannel: function (channelName) {
+        this.props.joinChannel(channelName);
+    },
+
     render: function () {
+        var that = this; // use this scope inside map function
+        var currentChannel = this.props.currentChannel;
         var channelList = this.props.channels.map(function(channel, i ) {
 
             return (
-                <li key={i} className="channel active">
+                <li key={i} className={channel === currentChannel ? 'channel active': 'channel'} onClick={that.switchChannel.bind(that, channel)}>
                     <a className="channel_name">
                         <span className="unread">0</span>
                         <span><span className="prefix">#</span>{channel}</span>

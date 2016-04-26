@@ -3,6 +3,8 @@ var ReactDOM = require ('react-dom');
 
 var Messages = React.createClass({
     render: function () {
+        // this is empty  at first, avoid errors
+        if (!this.props.messages) { return null }
         var messageList = this.props.messages.map(function (message, i) {
             var text = message.text;
             return (

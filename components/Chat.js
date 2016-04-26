@@ -16,29 +16,39 @@ const customStyles = {
     }
 };
 
+const DEFAULT_CHANNEL = 'general';
+
 // browserify -t reactify components/Chat.js -o bundle.js
 // watchify -t reactify components/Chat.js -o bundle.js -v
 var Chat = React.createClass({
     getInitialState: function () {
         return {
             name: null,
-            channels: [
-                'general',
-                'test'
-            ],
-            messages: [{
+            channels: [],
+            messages: {},
+            currentChannel: null
+        }
+    },
+    // right after the component is  rendered for the first time
+    // set messages, channels dynamically after the component is initially rendered
+    componentDidMount: function () {
+        this.createChannel(DEFAULT_CHANNEL);
+        var messages = {};
+        messages[DEFAULT_CHANNEL] = [
+            {
                 name:'adr_em',
                 time: new Date(),
                 text: 'Hello there!'
             },
-                {
-                    name:'_adrianespinosa',
-                    time: new Date(),
-                    text: 'Welcome!'
-                }
-
-            ]
-        }
+            {
+                name:'_adrianespinosa',
+                time: new Date(),
+                text: 'Welcome!'
+            }
+        ]
+        this.setState({
+            messages: messages
+        })
     },
 
     componentDidUpdate: function () {
@@ -58,7 +68,10 @@ var Chat = React.createClass({
                 text: text,
                 time: new Date()
             }
-            this.setState({messages: this.state.messages.concat(message)});
+
+            var messages = this.state.messages;
+            messages[this.state.currentChannel].push(message);
+            this.setState({ messages: messages });
             $('#msg-input').val('');
         }
     },
@@ -68,8 +81,19 @@ var Chat = React.createClass({
     // this will be passed to the Channels component as a property
     createChannel: function(channelName) {
         if (!(channelName in this.state.channels)) {
-            this.setState({channels: this.state.channels.concat(channelName)});
+            var messages = this.state.messages;
+            messages[channelName] = [];
+            this.setState({
+                channels: this.state.channels.concat(channelName),
+                messages: messages
+            });
+            this.joinChannel(channelName);
         }
+    },
+
+    // wrapper function to modify channel from other components
+    joinChannel: function (channelName) {
+        this.setState({currentChannel: channelName});
     },
 
     enterName: function(event) {
@@ -111,7 +135,7 @@ var Chat = React.createClass({
                     <div className="channel-menu">
             <span className="channel-menu_name">
             <span className="channel-menu_prefix">#</span>
-        general
+                {this.state.currentChannel}
         </span>
                     </div>
                 </div>
@@ -119,10 +143,15 @@ var Chat = React.createClass({
 
                 <div className="main">
                     <div className="listings">
-                        <Channels channels={this.state.channels} createChannel={this.createChannel} />
+                        <Channels
+                            channels={this.state.channels}
+                            createChannel={this.createChannel}
+                            currentChannel={this.state.currentChannel}
+                            joinChannel={this.joinChannel}
+                        />
                     </div>
                     <div className="message-history">
-                        <Messages messages={this.state.messages} />
+                        <Messages messages={this.state.messages[this.state.currentChannel]} />
 
                     </div>
                 </div>

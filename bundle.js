@@ -49,11 +49,17 @@ var Channels = React.createClass({displayName: "Channels",
         this.joinNewChannel();
     },
 
+    switchChannel: function (channelName) {
+        this.props.joinChannel(channelName);
+    },
+
     render: function () {
+        var that = this; // use this scope inside map function
+        var currentChannel = this.props.currentChannel;
         var channelList = this.props.channels.map(function(channel, i ) {
 
             return (
-                React.createElement("li", {key: i, className: "channel active"}, 
+                React.createElement("li", {key: i, className: channel === currentChannel ? 'channel active': 'channel', onClick: that.switchChannel.bind(that, channel)}, 
                     React.createElement("a", {className: "channel_name"}, 
                         React.createElement("span", {className: "unread"}, "0"), 
                         React.createElement("span", null, React.createElement("span", {className: "prefix"}, "#"), channel)
@@ -113,29 +119,39 @@ const customStyles = {
     }
 };
 
+const DEFAULT_CHANNEL = 'general';
+
 // browserify -t reactify components/Chat.js -o bundle.js
 // watchify -t reactify components/Chat.js -o bundle.js -v
 var Chat = React.createClass({displayName: "Chat",
     getInitialState: function () {
         return {
             name: null,
-            channels: [
-                'general',
-                'test'
-            ],
-            messages: [{
+            channels: [],
+            messages: {},
+            currentChannel: null
+        }
+    },
+    // right after the component is  rendered for the first time
+    // set messages, channels dynamically after the component is initially rendered
+    componentDidMount: function () {
+        this.createChannel(DEFAULT_CHANNEL);
+        var messages = {};
+        messages[DEFAULT_CHANNEL] = [
+            {
                 name:'adr_em',
                 time: new Date(),
                 text: 'Hello there!'
             },
-                {
-                    name:'_adrianespinosa',
-                    time: new Date(),
-                    text: 'Welcome!'
-                }
-
-            ]
-        }
+            {
+                name:'_adrianespinosa',
+                time: new Date(),
+                text: 'Welcome!'
+            }
+        ]
+        this.setState({
+            messages: messages
+        })
     },
 
     componentDidUpdate: function () {
@@ -155,7 +171,10 @@ var Chat = React.createClass({displayName: "Chat",
                 text: text,
                 time: new Date()
             }
-            this.setState({messages: this.state.messages.concat(message)});
+
+            var messages = this.state.messages;
+            messages[this.state.currentChannel].push(message);
+            this.setState({ messages: messages });
             $('#msg-input').val('');
         }
     },
@@ -165,8 +184,19 @@ var Chat = React.createClass({displayName: "Chat",
     // this will be passed to the Channels component as a property
     createChannel: function(channelName) {
         if (!(channelName in this.state.channels)) {
-            this.setState({channels: this.state.channels.concat(channelName)});
+            var messages = this.state.messages;
+            messages[channelName] = [];
+            this.setState({
+                channels: this.state.channels.concat(channelName),
+                messages: messages
+            });
+            this.joinChannel(channelName);
         }
+    },
+
+    // wrapper function to modify channel from other components
+    joinChannel: function (channelName) {
+        this.setState({currentChannel: channelName});
     },
 
     enterName: function(event) {
@@ -208,7 +238,7 @@ var Chat = React.createClass({displayName: "Chat",
                     React.createElement("div", {className: "channel-menu"}, 
             React.createElement("span", {className: "channel-menu_name"}, 
             React.createElement("span", {className: "channel-menu_prefix"}, "#"), 
-        "general"
+                this.state.currentChannel
         )
                     )
                 ), 
@@ -216,10 +246,15 @@ var Chat = React.createClass({displayName: "Chat",
 
                 React.createElement("div", {className: "main"}, 
                     React.createElement("div", {className: "listings"}, 
-                        React.createElement(Channels, {channels: this.state.channels, createChannel: this.createChannel})
+                        React.createElement(Channels, {
+                            channels: this.state.channels, 
+                            createChannel: this.createChannel, 
+                            currentChannel: this.state.currentChannel, 
+                            joinChannel: this.joinChannel}
+                        )
                     ), 
                     React.createElement("div", {className: "message-history"}, 
-                        React.createElement(Messages, {messages: this.state.messages})
+                        React.createElement(Messages, {messages: this.state.messages[this.state.currentChannel]})
 
                     )
                 ), 
@@ -250,6 +285,8 @@ var ReactDOM = require ('react-dom');
 
 var Messages = React.createClass({displayName: "Messages",
     render: function () {
+        // this is empty  at first, avoid errors
+        if (!this.props.messages) { return null }
         var messageList = this.props.messages.map(function (message, i) {
             var text = message.text;
             return (
