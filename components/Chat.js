@@ -24,7 +24,7 @@ var Chat = React.createClass({
     getInitialState: function () {
         return {
             name: null,
-            channels: [],
+            channels: {},
             messages: {},
             currentChannel: null
         }
@@ -73,18 +73,28 @@ var Chat = React.createClass({
         if (!(channelName in this.state.channels)) {
             var messages = this.state.messages;
             messages[channelName] = [];
+            var channels = this.state.channels;
+            channels[channelName] = {unreadCount:0};
+
+
             this.setState({
-                channels: this.state.channels.concat(channelName),
+                // channels: this.state.channels.concat(channelName),
+                channels: channels,
                 messages: messages
             });
             this.joinChannel(channelName);
             // subscribe to the channel to receive messages
             this.chatRooms[channelName] = this.pusher.subscribe(channelName);
-            
+
             // store messages into messages array binding an event
             this.chatRooms[channelName].bind('new_message', function (message) {
                 var messages = this.state.messages;
+                var channels = this.state.channels;
+
                 messages[channelName].push(message);
+                if (channelName != this.state.currentChannel) {
+                    channels[channelName].unreadCount++;
+                }
                 this.setState({ messages: messages });
             }, this);
 
@@ -93,7 +103,10 @@ var Chat = React.createClass({
 
     // wrapper function to modify channel from other components
     joinChannel: function (channelName) {
-        this.setState({currentChannel: channelName});
+        // reset unread count
+        var channels = this.state.channels;
+        channels[channelName].unreadCount = 0;
+        this.setState({currentChannel: channelName, channels: channels});
     },
 
     enterName: function(event) {
