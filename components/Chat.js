@@ -2,6 +2,7 @@ var React = require('react');
 var ReactDOM = require('react-dom');
 var Messages = require('./Messages');
 var Channels = require('./Channels');
+var Users = require('./Users');
 
 var Modal = require('react-modal');
 
@@ -32,14 +33,14 @@ var Chat = React.createClass({
 
     // before component
     componentWillMount: function () {
-        this.pusher = new Pusher(PUSHER_CHAT_APP_KEY);
+
         this.chatRooms = {};
     },
     // right after the component is  rendered for the first time
     // set messages, channels dynamically after the component is initially rendered
-    componentDidMount: function () {
-        this.createChannel(DEFAULT_CHANNEL);
-    },
+    // componentDidMount: function () {
+    //
+    // },
 
     componentDidUpdate: function () {
         $('#message-list').scrollTop($('#message-list')[0].scrollHeight);
@@ -84,7 +85,7 @@ var Chat = React.createClass({
             });
             this.joinChannel(channelName);
             // subscribe to the channel to receive messages
-            this.chatRooms[channelName] = this.pusher.subscribe(channelName);
+            this.chatRooms[channelName] = this.pusher.subscribe("presence-" + channelName);
 
             // store messages into messages array binding an event
             this.chatRooms[channelName].bind('new_message', function (message) {
@@ -115,7 +116,20 @@ var Chat = React.createClass({
             randomId = Math.floor((Math.random()*99) + 1);
             newName = "anonymous" + randomId;
         }
+
+        $.ajax({
+            type: 'POST',
+            url: '/setname/',
+            data: {name: newName },
+            async: false,
+        });
+
+        // put this here because we don't want to initialize before setting name
+        this.pusher = new Pusher(PUSHER_CHAT_APP_KEY, { authEndpoint: '/pusher/auth/'});
         this.setState({name: newName});
+
+        // after everything has been set, create channel
+        this.createChannel(DEFAULT_CHANNEL);
     },
 
     onEnter: function(event) {
@@ -163,6 +177,11 @@ var Chat = React.createClass({
                             joinChannel={this.joinChannel}
                         />
                     </div>
+
+                    <div className="online-users">
+                        <Users />
+                    </div>
+
                     <div className="message-history">
                         <Messages messages={this.state.messages[this.state.currentChannel]} />
 
