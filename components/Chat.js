@@ -27,6 +27,7 @@ var Chat = React.createClass({
             name: null,
             channels: {},
             messages: {},
+            users: {},
             currentChannel: null
         }
     },
@@ -99,6 +100,27 @@ var Chat = React.createClass({
                 this.setState({ messages: messages });
             }, this);
 
+            // populationg online users
+            this.chatRooms[channelName].bind('pusher:subscription_succeeded', function (data) {
+                var users = this.state.users;
+                users[channelName] = Object.keys(data.members);
+                this.setState({users:users});
+            }, this);
+
+            //member joined channel events
+            this.chatRooms[channelName].bind('pusher:member_added', function (user) {
+                var users = this.state.users;
+                users[channelName] = users[channelName].concat(user.id);
+                this.setState({users:users});
+            }, this);
+
+            // member left channel events
+            this.chatRooms[channelName].bind('pusher:member_removed', function (user) {
+                var users = this.state.users;
+                i = users[channelName].indexOf(user.id);
+                users[channelName].splice(i,1);
+                this.setState({users:users});
+            }, this);
         }
     },
 
@@ -179,7 +201,7 @@ var Chat = React.createClass({
                     </div>
 
                     <div className="online-users">
-                        <Users />
+                        <Users users={this.state.users[this.state.currentChannel]}/>
                     </div>
 
                     <div className="message-history">
